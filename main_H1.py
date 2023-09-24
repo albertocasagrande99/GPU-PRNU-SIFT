@@ -3,7 +3,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
 import sys
-sys.path.insert(1, 'PRNU/CameraFingerprint/')
+sys.path.insert(1, '/content/drive/MyDrive/Stabilized_videos/PRNU/CameraFingerprint')
 import src.Functions as Fu
 import src.Filter as Ft
 import numpy as np
@@ -307,63 +307,30 @@ with tf.device(FLAGS.gpu_dev):
         print(fingerprint_path)
         K = loadmat(fingerprint_path)
         device = fingerprint_path[len(fingerprint_path)-7:-4]
-        if device == 'D02':
-                    basescaling = 1.333174
-                    crop_array = [345, 1491, 206, 2242]  #[off_x, size_x, off_y, size_y]
-        elif device == 'D20':
-                    basescaling = 1.2270420000000004
-                    crop_array = [216, 1362, 38, 2074]  #[off_x, size_x, off_y, size_y]
-
-        elif device == 'D29':
-                    basescaling = 1.454894
-                    crop_array = [269, 1414, 103, 2140]  #[off_x, size_x, off_y, size_y]
-
-        elif device == 'D34':
-                    basescaling = 1.454877
-                    crop_array = [269, 1414, 103, 2140]  #[off_x, size_x, off_y, size_y]
-
-        elif device == 'D05':
-                    basescaling = 1.454894
-                    crop_array = [269, 1414, 103, 2140]  #[off_x, size_x, off_y, size_y]
-
-        elif device == 'D14':
-                    basescaling = 1.45486
-                    crop_array = [269, 1414, 103, 2140]  #[off_x, size_x, off_y, size_y]
-
-        elif device == 'D06':
-                    basescaling = 1.416848
-                    crop_array = [291, 1437, 134, 2170]  #[off_x, size_x, off_y, size_y]
-
-        elif device == 'D19':
-                    basescaling = 1.417239
-                    crop_array = [291, 1436, 133, 2170]  #[off_x, size_x, off_y, size_y]
-
-        elif device == 'D25':
-                    basescaling = 1.93311583333333
-                    crop_array = [327, 1473, 182, 2218]  #[off_x, size_x, off_y, size_y]
-
-        elif device == 'D10':
-                    basescaling = 1.333123
-                    crop_array = [345, 1491, 206, 2242]  #[off_x, size_x, off_y, size_y]
-
-        elif device == 'D18':
-                    basescaling = 1.454826
-                    crop_array = [269, 1414, 104, 2140]  #[off_x, size_x, off_y, size_y]
-
-        elif device == 'D15':
-                    basescaling = 1.416525
-                    crop_array = [291, 1437, 134, 2170]  #[off_x, size_x, off_y, size_y]
-
-        elif device == 'D12':
-                    basescaling = 2.63852
-                    crop_array = [460, 1988, 275, 2989]  #[off_x, size_x, off_y, size_y]
-        
+        if device2 == 'D05':
+                    basescaling = 2.39976
+        elif device2 == 'D07':
+                    basescaling = 1.7
+        elif device2 == 'D12':
+                    basescaling = 1.6996600000000002
+        elif device2 == 'D13':
+                    basescaling = 1.6998300000000002
+        elif device2 == 'D10':
+                    basescaling = 1.9266666666666667
+        elif device2 == 'D11':
+                    basescaling = 1.3336166666666667
+        elif device2 == 'D14':
+                    basescaling = 1.72
+        elif device2 == 'D15':
+                    basescaling = 1.214325
+        elif device2 == 'D16':
+                    basescaling = 1.6   
         else:
           continue
 
-        Fingerprint = K['fing']
+        Fingerprint = K['Fingerprint']
         Fingerprint = cv2.resize(Fingerprint, (0, 0), fx=(1/basescaling), fy=(1/basescaling))
-        Fingerprint = Fingerprint[crop_array[0]:crop_array[1],crop_array[2]:crop_array[3]]
+        #Fingerprint = Fingerprint[crop_array[0]:crop_array[1],crop_array[2]:crop_array[3]]
         size_fing = np.shape(Fingerprint)
         array2 = Fingerprint.astype(np.double)
         array2 = array2 - array2.mean()
@@ -378,188 +345,182 @@ with tf.device(FLAGS.gpu_dev):
             print(video_path)
             out_file = FLAGS.output + '/' + video_path[len(test_set):-4] + '_PCE.mat'
             if not os.path.exists(out_file):
-                with exiftool.ExifTool() as et:
-                    orientation = et.get_metadata(video_path)["Composite:Rotation"]
-                    print("Rotation: %d" % orientation)
-                if orientation == 90 or orientation == 270:
-                    print("vertical video, skipping")
-                else:
-                    start_run = time.time()
-                    id_job = os.getpid()
-                    path_to_file = 'frames' + str(id_job) + '.txt'
-                    if os.path.exists(path_to_file):
-                        cmd = ("rm -r %s" % path_to_file)
-                        os.system(cmd)
-                    cmd = ("ffprobe %s -show_frames | grep -E pict_type > %s" % (video_path, path_to_file))
+                start_run = time.time()
+                id_job = os.getpid()
+                path_to_file = 'frames' + str(id_job) + '.txt'
+                if os.path.exists(path_to_file):
+                    cmd = ("rm -r %s" % path_to_file)
                     os.system(cmd)
-                    f = open(path_to_file, "r")
-                    lines = f.readlines()
-                    index=[]
-                    count = 0
-                    for line in lines:
-                        if line[-2] == 'I':
-                            index.append(count)
-                        count += 1
-                    # selection frames
-                    start = time.time()
-                    idx_start_frame = sf.frame_selector(video_path, index)
-                    print('TIME CONSUMED frame selector: ', time.time()-start)
-                    index_first_anchor = index[idx_start_frame]
-                    index_second_anchor = index[idx_start_frame+1]
-                    cap = cv2.VideoCapture(video_path)
-                    print('real index 1: ', index[idx_start_frame])
-                    print('real index 2: ', index[idx_start_frame+1])
-                    pce_anchors = []
-                    #pce achor 1 estimation
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, index[idx_start_frame])
-                    _, frame = cap.read()
-                    inversion = False
-                    if orientation == 180:
-                        inversion = True
-                        print("Inverted video")
+                cmd = ("ffprobe %s -show_frames | grep -E pict_type > %s" % (video_path, path_to_file))
+                os.system(cmd)
+                f = open(path_to_file, "r")
+                lines = f.readlines()
+                index=[]
+                count = 0
+                for line in lines:
+                    if line[-2] == 'I':
+                        index.append(count)
+                    count += 1
+                # selection frames
+                start = time.time()
+                idx_start_frame = sf.frame_selector(video_path, index)
+                print('TIME CONSUMED frame selector: ', time.time()-start)
+                index_first_anchor = index[idx_start_frame]
+                index_second_anchor = index[idx_start_frame+1]
+                cap = cv2.VideoCapture(video_path)
+                print('real index 1: ', index[idx_start_frame])
+                print('real index 2: ', index[idx_start_frame+1])
+                pce_anchors = []
+                #pce achor 1 estimation
+                cap.set(cv2.CAP_PROP_POS_FRAMES, index[idx_start_frame])
+                _, frame = cap.read()
+                inversion = False
+                #if orientation == 180:
+                #    inversion = True
+                #    print("Inverted video")
+                #if inversion:
+                #    frame = cv2.rotate(frame, cv2.ROTATE_180)
+                resized = frame
+                size_frame = np.shape(resized)
+                noise = Ft.NoiseExtractFromImage(resized, sigma=2.)
+                noise = Fu.WienerInDFT(noise, np.std(noise))
+                W_T1 = tfa.image.transform(tf.convert_to_tensor(noise, dtype=tf.float32), [1,0,0,0,1,0,0,0], 'BILINEAR', [size_fing[0], size_fing[1]])
+                #pce anchor 2 estimation
+                cap.set(cv2.CAP_PROP_POS_FRAMES, index[idx_start_frame+1])
+                _, frame = cap.read()
+                if inversion:
+                    frame = cv2.rotate(frame, cv2.ROTATE_180)
+                resized = frame
+                noise = Ft.NoiseExtractFromImage(resized, sigma=2.)
+                noise = Fu.WienerInDFT(noise, np.std(noise))
+                W_T2 = tfa.image.transform(tf.convert_to_tensor(noise, dtype=tf.float32), [1,0,0,0,1,0,0,0], 'BILINEAR', [size_fing[0], size_fing[1]])
+                time_array = []
+                XC = (crosscorr_Fingeprint_GPU((tf.expand_dims([W_T1, W_T2], axis=3)), TA_tf, norm2,
+                                            (1,)+np.shape(tilted_array2)))
+                ranges = [[(size_fing[0] - noise.shape[0]), (size_fing[1] - noise.shape[1])], [(size_fing[0] - noise.shape[0]), (size_fing[1] - noise.shape[1])]]
+                pce_anchors = parallel_PCE(XC.numpy(), len(XC), ranges)
+                #find maximum and frame order
+                idx_anchor_start = np.where(pce_anchors == np.max(pce_anchors))[0][0]
+                if idx_anchor_start == 0:
+                    start_idx_frame = index[idx_start_frame]
+                    end_idx_frame = index[idx_start_frame+1]
+                    set_idx_frame = [i for i in range(start_idx_frame, end_idx_frame+1)]
+                elif idx_anchor_start == 1:
+                    start_idx_frame = index[idx_start_frame]
+                    end_idx_frame = index[idx_start_frame+1]
+                    set_idx_frame = sorted([i for i in range(start_idx_frame, end_idx_frame+1)], reverse=True)
+                cap.release()
+                cap = cv2.VideoCapture(video_path)
+                matcher = cv2.BFMatcher(cv2.NORM_L1, crossCheck=True)
+                pce_array = []
+                start_loop = time.time()
+                for idx_frame in set_idx_frame:
+                    print('IDX frame: ', idx_frame)
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, idx_frame)
+                    ret, frame = cap.read()
                     if inversion:
                         frame = cv2.rotate(frame, cv2.ROTATE_180)
-                    resized = frame
-                    size_frame = np.shape(resized)
-                    noise = Ft.NoiseExtractFromImage(resized, sigma=2.)
-                    noise = Fu.WienerInDFT(noise, np.std(noise))
-                    W_T1 = tfa.image.transform(tf.convert_to_tensor(noise, dtype=tf.float32), [1,0,0,0,1,0,0,0], 'BILINEAR', [size_fing[0], size_fing[1]])
-                    #pce anchor 2 estimation
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, index[idx_start_frame+1])
-                    _, frame = cap.read()
-                    if inversion:
-                        frame = cv2.rotate(frame, cv2.ROTATE_180)
-                    resized = frame
-                    noise = Ft.NoiseExtractFromImage(resized, sigma=2.)
-                    noise = Fu.WienerInDFT(noise, np.std(noise))
-                    W_T2 = tfa.image.transform(tf.convert_to_tensor(noise, dtype=tf.float32), [1,0,0,0,1,0,0,0], 'BILINEAR', [size_fing[0], size_fing[1]])
-                    time_array = []
-                    XC = (crosscorr_Fingeprint_GPU((tf.expand_dims([W_T1, W_T2], axis=3)), TA_tf, norm2,
-                                               (1,)+np.shape(tilted_array2)))
-                    ranges = [[(size_fing[0] - noise.shape[0]), (size_fing[1] - noise.shape[1])], [(size_fing[0] - noise.shape[0]), (size_fing[1] - noise.shape[1])]]
-                    pce_anchors = parallel_PCE(XC.numpy(), len(XC), ranges)
-                    #find maximum and frame order
-                    idx_anchor_start = np.where(pce_anchors == np.max(pce_anchors))[0][0]
-                    if idx_anchor_start == 0:
-                        start_idx_frame = index[idx_start_frame]
-                        end_idx_frame = index[idx_start_frame+1]
-                        set_idx_frame = [i for i in range(start_idx_frame, end_idx_frame+1)]
-                    elif idx_anchor_start == 1:
-                        start_idx_frame = index[idx_start_frame]
-                        end_idx_frame = index[idx_start_frame+1]
-                        set_idx_frame = sorted([i for i in range(start_idx_frame, end_idx_frame+1)], reverse=True)
-                    cap.release()
-                    cap = cv2.VideoCapture(video_path)
-                    matcher = cv2.BFMatcher(cv2.NORM_L1, crossCheck=True)
-                    pce_array = []
-                    start_loop = time.time()
-                    for idx_frame in set_idx_frame:
-                        print('IDX frame: ', idx_frame)
-                        cap.set(cv2.CAP_PROP_POS_FRAMES, idx_frame)
-                        ret, frame = cap.read()
-                        if inversion:
-                            frame = cv2.rotate(frame, cv2.ROTATE_180)
-                        #check inversion
+                    #check inversion
+                    #
+                    start_time = time.time()
+                    if ret:
+                        resized = frame
+                        noise = Ft.NoiseExtractFromImage(resized, sigma=2.)
+                        noise = Fu.WienerInDFT(noise, np.std(noise))
                         #
-                        start_time = time.time()
-                        if ret:
-                            resized = frame
-                            noise = Ft.NoiseExtractFromImage(resized, sigma=2.)
-                            noise = Fu.WienerInDFT(noise, np.std(noise))
-                            #
-                            W_T = tfa.image.transform(tf.convert_to_tensor(noise, dtype=tf.float32), [1,0,0,0,1,0,0,0], 'BILINEAR', [size_fing[0], size_fing[1]])
-                            XC = (crosscorr_Fingeprint_GPU((tf.expand_dims(tf.expand_dims(W_T, axis=0), axis=3)), TA_tf, norm2,
-                                                    (1,)+np.shape(tilted_array2)))
-                            ranges = [[(size_fing[0] - noise.shape[0]), (size_fing[1] - noise.shape[1])]]
-                            pceres = parallel_PCE(XC.numpy(), len(XC), ranges)
-                            #
-                            print("PCE after resizing: %f" % pceres)
-                            if ((int(cap.get(cv2.CAP_PROP_POS_FRAMES))-1) not in index) and ('oframe' in locals()):
-                                orb = cv2.SIFT_create()
-                                start = time.time()
-                                queryKeypoints, queryDescriptors = orb.detectAndCompute(resized, None)
-                                trainKeypoints, trainDescriptors = orb.detectAndCompute(oframe, None)
-                                if queryDescriptors is not None and trainDescriptors is not None:
-                                    matches = matcher.match(queryDescriptors, trainDescriptors)
-                                    matches = sorted(matches, key=lambda x: x.distance)
-                                    matches = matches[:int(len(matches) * 0.9)]
-                                    if len(matches):
-                                        med = statistics.median([math.sqrt(
-                                        (queryKeypoints[match.queryIdx].pt[0] - trainKeypoints[match.trainIdx].pt[0]) ** 2 + (
-                                            queryKeypoints[match.queryIdx].pt[1] - trainKeypoints[match.trainIdx].pt[1]) ** 2) for
-                                                 match in matches])
-                                        matches = [match for match in matches if math.sqrt(
-                                        (queryKeypoints[match.queryIdx].pt[0] - trainKeypoints[match.trainIdx].pt[0]) ** 2 + (
-                                            queryKeypoints[match.queryIdx].pt[1] - trainKeypoints[match.trainIdx].pt[
-                                            1]) ** 2) < med * 10]
-                                    no_of_matches = len(matches)
-                                    if no_of_matches > 4:
-                                        p1 = np.zeros((no_of_matches, 2))
-                                        p2 = np.zeros((no_of_matches, 2))
-                                        for i in range(len(matches)):
-                                            p1[i, :] = queryKeypoints[matches[i].queryIdx].pt
-                                            p2[i, :] = trainKeypoints[matches[i].trainIdx].pt
-                                        hom, mask = cv2.findHomography(p1, p2, cv2.USAC_DEFAULT)
-                                        if hom is not None:
-                                            hom[0, 2] = 0
-                                            hom[1, 2] = 0
-                                            noisecorr = cv2.warpPerspective(noise, hom, (np.shape(noise)[1], np.shape(noise)[0]))
-                                            W_corr = tfa.image.transform(tf.convert_to_tensor(noisecorr, dtype=tf.float32),
-                                                         [1, 0, 0, 0, 1, 0, 0, 0], 'BILINEAR', [size_fing[0], size_fing[1]])
-                                            XC = (crosscorr_Fingeprint_GPU((tf.expand_dims(tf.expand_dims(W_corr, axis=0), axis=3)), TA_tf,
-                                                           norm2, (1,)+np.shape(tilted_array2)))
-                                            ranges = [[(size_fing[0] - noisecorr.shape[0]), (size_fing[1] - noisecorr.shape[1])]]
-                                            pcecorr = parallel_PCE(XC.numpy(), len(XC), ranges)
-                                            print("PCE after correction: %f" % pcecorr)
-                                            if pcecorr > pceres:
-                                                start = time.time()
-                                                homography, pce, rotation, scaling = calibration_GPU(np.linalg.inv(hom), noise, 0, 0, 0, TA_tf, norm2, (1,)+np.shape(tilted_array2), [1,0,0,0,1,0,0,0], pcecorr)
-                                                pce_array.append(pce)
-                                                time_array.append(time.time() - start_run)
-                                                print('time calibration: ', time.time()-start)
-                                                oframe = tfa.image.transform(resized, homography,
-                                                             'BILINEAR', [np.uint32(np.rint(resized.shape[0]/homography[0])),
-                                                              np.uint32(np.rint(resized.shape[1]/homography[0]))]).numpy()
-                                            else:
-                                                start = time.time()
-                                                homography, pce, rotation, scaling = calibration_GPU(np.zeros((3,3)), noise, 0, 0, 0, TA_tf, norm2, (1,)+np.shape(tilted_array2), [1,0,0,0,1,0,0,0], pceres)
-                                                pce_array.append(pce)
-                                                time_array.append(time.time() - start_run)
-                                                print('time calibration: ', time.time()-start)
-                                                oframe = tfa.image.transform(resized, homography,
-                                                             'BILINEAR', [np.uint32(np.rint(resized.shape[0]/homography[0])),
-                                                             np.uint32(np.rint(resized.shape[1]/homography[0]))]).numpy()
+                        W_T = tfa.image.transform(tf.convert_to_tensor(noise, dtype=tf.float32), [1,0,0,0,1,0,0,0], 'BILINEAR', [size_fing[0], size_fing[1]])
+                        XC = (crosscorr_Fingeprint_GPU((tf.expand_dims(tf.expand_dims(W_T, axis=0), axis=3)), TA_tf, norm2,
+                                                (1,)+np.shape(tilted_array2)))
+                        ranges = [[(size_fing[0] - noise.shape[0]), (size_fing[1] - noise.shape[1])]]
+                        pceres = parallel_PCE(XC.numpy(), len(XC), ranges)
+                        #
+                        print("PCE after resizing: %f" % pceres)
+                        if ((int(cap.get(cv2.CAP_PROP_POS_FRAMES))-1) not in index) and ('oframe' in locals()):
+                            orb = cv2.SIFT_create()
+                            start = time.time()
+                            queryKeypoints, queryDescriptors = orb.detectAndCompute(resized, None)
+                            trainKeypoints, trainDescriptors = orb.detectAndCompute(oframe, None)
+                            if queryDescriptors is not None and trainDescriptors is not None:
+                                matches = matcher.match(queryDescriptors, trainDescriptors)
+                                matches = sorted(matches, key=lambda x: x.distance)
+                                matches = matches[:int(len(matches) * 0.9)]
+                                if len(matches):
+                                    med = statistics.median([math.sqrt(
+                                    (queryKeypoints[match.queryIdx].pt[0] - trainKeypoints[match.trainIdx].pt[0]) ** 2 + (
+                                        queryKeypoints[match.queryIdx].pt[1] - trainKeypoints[match.trainIdx].pt[1]) ** 2) for
+                                                match in matches])
+                                    matches = [match for match in matches if math.sqrt(
+                                    (queryKeypoints[match.queryIdx].pt[0] - trainKeypoints[match.trainIdx].pt[0]) ** 2 + (
+                                        queryKeypoints[match.queryIdx].pt[1] - trainKeypoints[match.trainIdx].pt[
+                                        1]) ** 2) < med * 10]
+                                no_of_matches = len(matches)
+                                if no_of_matches > 4:
+                                    p1 = np.zeros((no_of_matches, 2))
+                                    p2 = np.zeros((no_of_matches, 2))
+                                    for i in range(len(matches)):
+                                        p1[i, :] = queryKeypoints[matches[i].queryIdx].pt
+                                        p2[i, :] = trainKeypoints[matches[i].trainIdx].pt
+                                    hom, mask = cv2.findHomography(p1, p2, cv2.USAC_DEFAULT)
+                                    if hom is not None:
+                                        hom[0, 2] = 0
+                                        hom[1, 2] = 0
+                                        noisecorr = cv2.warpPerspective(noise, hom, (np.shape(noise)[1], np.shape(noise)[0]))
+                                        W_corr = tfa.image.transform(tf.convert_to_tensor(noisecorr, dtype=tf.float32),
+                                                        [1, 0, 0, 0, 1, 0, 0, 0], 'BILINEAR', [size_fing[0], size_fing[1]])
+                                        XC = (crosscorr_Fingeprint_GPU((tf.expand_dims(tf.expand_dims(W_corr, axis=0), axis=3)), TA_tf,
+                                                        norm2, (1,)+np.shape(tilted_array2)))
+                                        ranges = [[(size_fing[0] - noisecorr.shape[0]), (size_fing[1] - noisecorr.shape[1])]]
+                                        pcecorr = parallel_PCE(XC.numpy(), len(XC), ranges)
+                                        print("PCE after correction: %f" % pcecorr)
+                                        if pcecorr > pceres:
+                                            start = time.time()
+                                            homography, pce, rotation, scaling = calibration_GPU(np.linalg.inv(hom), noise, 0, 0, 0, TA_tf, norm2, (1,)+np.shape(tilted_array2), [1,0,0,0,1,0,0,0], pcecorr)
+                                            pce_array.append(pce)
+                                            time_array.append(time.time() - start_run)
+                                            print('time calibration: ', time.time()-start)
+                                            oframe = tfa.image.transform(resized, homography,
+                                                            'BILINEAR', [np.uint32(np.rint(resized.shape[0]/homography[0])),
+                                                            np.uint32(np.rint(resized.shape[1]/homography[0]))]).numpy()
                                         else:
-                                                start = time.time()
-                                                homography, pce, rotation, scaling = calibration_GPU(np.zeros((3,3)), noise, 0, 0, 0, TA_tf, norm2, (1,)+np.shape(tilted_array2), [1,0,0,0,1,0,0,0], pceres)
-                                                pce_array.append(pce)
-                                                time_array.append(time.time() - start_run)
-                                                print('time calibration: ', time.time()-start)
-                                                oframe = tfa.image.transform(resized, homography,
-                                                             'BILINEAR', [np.uint32(np.rint(resized.shape[0]/homography[0])),
-                                                              np.uint32(np.rint(resized.shape[1]/homography[0]))]).numpy()
-                                else:
-                                    start = time.time()
-                                    homography, pce, rotation, scaling = calibration_GPU(np.zeros((3,3)), noise, 0, 0, 0, TA_tf, norm2, (1,)+np.shape(tilted_array2), [1,0,0,0,1,0,0,0], pceres)
-                                    pce_array.append(pce)
-                                    time_array.append(time.time() - start_run)
-                                    print('time calibration: ', time.time()-start)
-                                    oframe = tfa.image.transform(resized, homography,
-                                                         'BILINEAR', [np.uint32(np.rint(resized.shape[0]/homography[0])),
-                                                              np.uint32(np.rint(resized.shape[1]/homography[0]))]).numpy()
+                                            start = time.time()
+                                            homography, pce, rotation, scaling = calibration_GPU(np.zeros((3,3)), noise, 0, 0, 0, TA_tf, norm2, (1,)+np.shape(tilted_array2), [1,0,0,0,1,0,0,0], pceres)
+                                            pce_array.append(pce)
+                                            time_array.append(time.time() - start_run)
+                                            print('time calibration: ', time.time()-start)
+                                            oframe = tfa.image.transform(resized, homography,
+                                                            'BILINEAR', [np.uint32(np.rint(resized.shape[0]/homography[0])),
+                                                            np.uint32(np.rint(resized.shape[1]/homography[0]))]).numpy()
+                                    else:
+                                            start = time.time()
+                                            homography, pce, rotation, scaling = calibration_GPU(np.zeros((3,3)), noise, 0, 0, 0, TA_tf, norm2, (1,)+np.shape(tilted_array2), [1,0,0,0,1,0,0,0], pceres)
+                                            pce_array.append(pce)
+                                            time_array.append(time.time() - start_run)
+                                            print('time calibration: ', time.time()-start)
+                                            oframe = tfa.image.transform(resized, homography,
+                                                            'BILINEAR', [np.uint32(np.rint(resized.shape[0]/homography[0])),
+                                                            np.uint32(np.rint(resized.shape[1]/homography[0]))]).numpy()
                             else:
                                 start = time.time()
-                                homography, pce, rotation, scaling = calibration_GPU(np.zeros([3,3]), noise, 0, 0, 0, TA_tf, norm2, (1,)+np.shape(tilted_array2), [1,0,0,0,1,0,0,0], pceres)
+                                homography, pce, rotation, scaling = calibration_GPU(np.zeros((3,3)), noise, 0, 0, 0, TA_tf, norm2, (1,)+np.shape(tilted_array2), [1,0,0,0,1,0,0,0], pceres)
                                 pce_array.append(pce)
                                 time_array.append(time.time() - start_run)
                                 print('time calibration: ', time.time()-start)
                                 oframe = tfa.image.transform(resized, homography,
-                                                 'BILINEAR', [np.uint32(np.rint(resized.shape[0]/homography[0])),
-                                                          np.uint32(np.rint(resized.shape[1]/homography[0]))]).numpy()
-                            if cv2.waitKey(25) & 0xFF == ord('q'):
-                                break
+                                                        'BILINEAR', [np.uint32(np.rint(resized.shape[0]/homography[0])),
+                                                            np.uint32(np.rint(resized.shape[1]/homography[0]))]).numpy()
                         else:
+                            start = time.time()
+                            homography, pce, rotation, scaling = calibration_GPU(np.zeros([3,3]), noise, 0, 0, 0, TA_tf, norm2, (1,)+np.shape(tilted_array2), [1,0,0,0,1,0,0,0], pceres)
+                            pce_array.append(pce)
+                            time_array.append(time.time() - start_run)
+                            print('time calibration: ', time.time()-start)
+                            oframe = tfa.image.transform(resized, homography,
+                                                'BILINEAR', [np.uint32(np.rint(resized.shape[0]/homography[0])),
+                                                        np.uint32(np.rint(resized.shape[1]/homography[0]))]).numpy()
+                        if cv2.waitKey(25) & 0xFF == ord('q'):
                             break
+                    else:
+                        break
                     if not os.path.exists(FLAGS.output):
                         os.mkdir(FLAGS.output)
                     mdir = {'pce': np.asarray(pce_array)}
