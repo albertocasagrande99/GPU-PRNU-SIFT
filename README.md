@@ -17,6 +17,10 @@ conda env create -f environment.yml
 Download DivNoise dataset [here](https://divnoise.fotoverifier.eu/).
 
 # Test
+Before testing, it is necessary to estimate the scaling parameters (required for resizing the camera fingerprints). For this purpose, just run this command inside the basescaling folder:
+```
+python main_H1_basescaling.py --videos video_path --fingerprint fingerprint_path
+```
 
 ## Test a match (H1) hypothesis case
 ```
