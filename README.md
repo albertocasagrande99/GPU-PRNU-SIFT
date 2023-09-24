@@ -12,9 +12,9 @@ This is the official code implementation of the "ICIP 2022" paper ["GPU-accelera
 ```
 conda env create -f environment.yml
 ```
-## VISION DATASET
+## DivNoise DATASET
 
-Download Vision dataset [here](https://lesc.dinfo.unifi.it/en/datasets).
+Download DivNoise dataset [here](https://divnoise.fotoverifier.eu/).
 
 # Test
 
